@@ -13,15 +13,14 @@ from PIL import ImageTk
 class Window(ctk.CTk):
     def __init__(self, robot):
         super().__init__()
-        self.label = None
-        self.height = None
-        self.width = None
+        self.video = None
         self.vector = robot
-        self.loop = asyncio.get_event_loop()
         self.configure_style()
-        self.label = ctk.CTkLabel(self, text="")
-        self.label.pack(fill=ctk.BOTH, expand=True)
+        self.video = ctk.CTkLabel(self, text="")
+        self.video.pack(fill=ctk.BOTH, expand=True)
+        self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0, ctk.END))
         self.speak_entry = ctk.CTkEntry(self, placeholder_text="Enter what you want Vector to say here!")
+        self.clear_text.pack(fill=ctk.BOTH, expand=True)
         self.speak_entry.pack(fill=ctk.BOTH, expand=True)
         self.vector.camera.init_camera_feed()
         self.start_camera()
@@ -50,7 +49,7 @@ class Window(ctk.CTk):
         image = self.vector.camera.latest_image.raw_image
         print(image)
         photo_image = ctk.CTkImage(light_image=image, size=(453, 339))
-        self.label.configure(image=photo_image)
+        self.video.configure(image=photo_image)
         self.after(20, self.start_camera)
 
     # Vectors speech
