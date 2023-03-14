@@ -13,27 +13,24 @@ from PIL import ImageTk
 class Window(ctk.CTk):
     def __init__(self, robot):
         super().__init__()
+        self.lift_speed = None
+        self.pressed = {}
+        self.move_speed = 100
+        self.head_speed = 1.0
         self.video = None
         self.vector = robot
         self.configure_style()
         self.video = ctk.CTkLabel(self, text="")
         self.video.pack(fill=ctk.BOTH, expand=True)
-        self.video.bind("<Button-1>", lambda event: self.video.focus())
         self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0, ctk.END))
         self.speak_entry = ctk.CTkEntry(self, placeholder_text="Enter what you want Vector to say here!")
         self.clear_text.pack(fill=ctk.BOTH, expand=True)
         self.speak_entry.pack(fill=ctk.BOTH, expand=True)
         self.vector.camera.init_camera_feed()
         self.start_camera()
-        self.speak_entry.bind("<Return>", lambda event: robot.behavior.say_text(self.speak_entry.get()))
-        self.bind("<KeyPress-Up>", self.up_arrow)
-        self.bind("<KeyRelease-Up>", self.stop)
-        self.bind("<KeyPress-Down>", self.down_arrow)
-        self.bind("<KeyRelease-Down>", self.stop)
-        self.bind("<KeyPress-Left>", self.left_arrow)
-        self.bind("<KeyRelease-Left>", self.stop)
-        self.bind("<KeyPress-Right>", self.right_arrow)
-        self.bind("<KeyRelease-Right>", self.stop)
+        self.set_binding()
+        self.move()
+
     def configure_style(self):
         self.configure(background='#303030')
         self.title("Vector Remote")
@@ -52,6 +49,22 @@ class Window(ctk.CTk):
         # Centers window based on users monitor
         self.geometry('%dx%d+%d+%d' % (width, height, x, y))
 
+    def set_binding(self):
+        self.video.bind("<Button-1>", lambda event: self.video.focus())
+        self.speak_entry.bind("<Return>", lambda event: self.vector_speak())
+        self.bind("<KeyPress-w>", self.key_pressed)
+        self.bind("<KeyRelease-w>", self.key_released)
+        self.bind("<KeyPress-s>", self.key_pressed)
+        self.bind("<KeyRelease-s>", self.key_released)
+        self.bind("<KeyPress-a>", self.key_pressed)
+        self.bind("<KeyRelease-a>", self.key_released)
+        self.bind("<KeyPress-d>", self.key_pressed)
+        self.bind("<KeyRelease-d>", self.key_released)
+        self.pressed["w"] = False
+        self.pressed["s"] = False
+        self.pressed["a"] = False
+        self.pressed["d"] = False
+
     # LOADS SO SLOW- LOOK AT IT LATER
     def start_camera(self):
         image = self.vector.camera.latest_image.raw_image
@@ -66,21 +79,29 @@ class Window(ctk.CTk):
             return
         self.vector.behavior.say_text(to_say)
 
-    def up_arrow(self, x):
-        print("Up arrow pressed")
-        self.vector.motors.set_wheel_motors(300, 300)
+    def move(self):
+        if self.pressed["w"] and self.pressed["a"]:
+            self.vector.motors.set_wheel_motors(self.move_speed//2, self.move_speed)
+        elif self.pressed["w"] and self.pressed["d"]:
+            self.vector.motors.set_wheel_motors(self.move_speed, self.move_speed//2)
+        elif self.pressed["s"] and self.pressed["a"]:
+            self.vector.motors.set_wheel_motors(-(self.move_speed//2), -self.move_speed)
+        elif self.pressed["s"] and self.pressed["d"]:
+            self.vector.motors.set_wheel_motors(-self.move_speed, -(self.move_speed//2))
+        elif self.pressed["w"]:
+            self.vector.motors.set_wheel_motors(self.move_speed, self.move_speed)
+        elif self.pressed["a"]:
+            self.vector.motors.set_wheel_motors(-self.move_speed, self.move_speed)
+        elif self.pressed["d"]:
+            self.vector.motors.set_wheel_motors(self.move_speed, -self.move_speed)
+        elif self.pressed["s"]:
+            self.vector.motors.set_wheel_motors(-self.move_speed, -self.move_speed)
+        self.after(100, self.move)
 
-    def left_arrow(self, x):
-        print("Left arrow pressed")
-        self.vector.motors.set_wheel_motors(-300, 300)
+    def key_pressed(self, event):
+        self.pressed[event.keysym] = True
 
-    def right_arrow(self, x):
-        print("Right arrow pressed")
-        self.vector.motors.set_wheel_motors(300, -300)
-
-    def down_arrow(self, x):
-        print("Down arrow pressed")
-        self.vector.motors.set_wheel_motors(-300, -300)
-
-    def stop(self, x):
-        self.vector.motors.set_wheel_motors(0, 0)
+    def key_released(self, event):
+        self.pressed[event.char] = False
+        if not(self.pressed["w"] or self.pressed["s"] or self.pressed["a"] or self.pressed["d"]):
+            self.vector.motors.set_wheel_motors(0, 0)
