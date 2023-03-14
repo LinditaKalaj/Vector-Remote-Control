@@ -9,16 +9,15 @@ import sys
 
 from PIL import ImageTk
 
+from move_vector import MoveVector
+
 
 class Window(ctk.CTk):
     def __init__(self, robot):
         super().__init__()
-        self.lift_speed = None
-        self.pressed = {}
-        self.move_speed = 100
-        self.head_speed = 1.0
         self.video = None
         self.vector = robot
+        self.move_vector = MoveVector(robot)
         self.configure_style()
         self.video = ctk.CTkLabel(self, text="")
         self.video.pack(fill=ctk.BOTH, expand=True)
@@ -52,18 +51,14 @@ class Window(ctk.CTk):
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
         self.speak_entry.bind("<Return>", lambda event: self.vector_speak())
-        self.bind("<KeyPress-w>", self.key_pressed)
-        self.bind("<KeyRelease-w>", self.key_released)
-        self.bind("<KeyPress-s>", self.key_pressed)
-        self.bind("<KeyRelease-s>", self.key_released)
-        self.bind("<KeyPress-a>", self.key_pressed)
-        self.bind("<KeyRelease-a>", self.key_released)
-        self.bind("<KeyPress-d>", self.key_pressed)
-        self.bind("<KeyRelease-d>", self.key_released)
-        self.pressed["w"] = False
-        self.pressed["s"] = False
-        self.pressed["a"] = False
-        self.pressed["d"] = False
+        self.bind("<KeyPress-w>", self.move_vector.key_pressed)
+        self.bind("<KeyRelease-w>", self.move_vector.key_released)
+        self.bind("<KeyPress-s>", self.move_vector.key_pressed)
+        self.bind("<KeyRelease-s>", self.move_vector.key_released)
+        self.bind("<KeyPress-a>", self.move_vector.key_pressed)
+        self.bind("<KeyRelease-a>", self.move_vector.key_released)
+        self.bind("<KeyPress-d>", self.move_vector.key_pressed)
+        self.bind("<KeyRelease-d>", self.move_vector.key_released)
 
     # LOADS SO SLOW- LOOK AT IT LATER
     def start_camera(self):
@@ -80,28 +75,5 @@ class Window(ctk.CTk):
         self.vector.behavior.say_text(to_say)
 
     def move(self):
-        if self.pressed["w"] and self.pressed["a"]:
-            self.vector.motors.set_wheel_motors(self.move_speed//2, self.move_speed)
-        elif self.pressed["w"] and self.pressed["d"]:
-            self.vector.motors.set_wheel_motors(self.move_speed, self.move_speed//2)
-        elif self.pressed["s"] and self.pressed["a"]:
-            self.vector.motors.set_wheel_motors(-(self.move_speed//2), -self.move_speed)
-        elif self.pressed["s"] and self.pressed["d"]:
-            self.vector.motors.set_wheel_motors(-self.move_speed, -(self.move_speed//2))
-        elif self.pressed["w"]:
-            self.vector.motors.set_wheel_motors(self.move_speed, self.move_speed)
-        elif self.pressed["a"]:
-            self.vector.motors.set_wheel_motors(-self.move_speed, self.move_speed)
-        elif self.pressed["d"]:
-            self.vector.motors.set_wheel_motors(self.move_speed, -self.move_speed)
-        elif self.pressed["s"]:
-            self.vector.motors.set_wheel_motors(-self.move_speed, -self.move_speed)
+        self.move_vector.main_move()
         self.after(100, self.move)
-
-    def key_pressed(self, event):
-        self.pressed[event.keysym] = True
-
-    def key_released(self, event):
-        self.pressed[event.char] = False
-        if not(self.pressed["w"] or self.pressed["s"] or self.pressed["a"] or self.pressed["d"]):
-            self.vector.motors.set_wheel_motors(0, 0)
