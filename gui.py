@@ -59,6 +59,14 @@ class Window(ctk.CTk):
         self.bind("<KeyRelease-a>", self.move_vector.key_released)
         self.bind("<KeyPress-d>", self.move_vector.key_pressed)
         self.bind("<KeyRelease-d>", self.move_vector.key_released)
+        self.bind("<KeyPress-Up>", lambda event: self.move_vector.move_lift(1))
+        self.bind("<KeyRelease-Up>", self.move_vector.stop_lift)
+        self.bind("<KeyPress-Down>", lambda event: self.move_vector.move_lift(-1))
+        self.bind("<KeyRelease-Down>", self.move_vector.stop_lift)
+        self.bind("<KeyPress-Right>", lambda event: self.move_vector.move_head(1))
+        self.bind("<KeyRelease-Right>", self.move_vector.stop_head)
+        self.bind("<KeyPress-Left>", lambda event: self.move_vector.move_head(-1))
+        self.bind("<KeyRelease-Left>", self.move_vector.stop_head)
 
     # LOADS SO SLOW- LOOK AT IT LATER
     def start_camera(self):

@@ -4,6 +4,7 @@ class MoveVector:
         self.pressed = {}
         self.move_speed = 100
         self.head_speed = 1.0
+        self.lift_speed = 3
         self.pressed["w"] = False
         self.pressed["s"] = False
         self.pressed["a"] = False
@@ -41,8 +42,8 @@ class MoveVector:
     def stop_head(self, x):
         self.vector.motors.set_head_motor(0)
 
-    def move_lift(self, x):
-        self.vector.motors.set_lift_motor(5)
+    def move_lift(self, direction):
+        self.vector.motors.set_lift_motor(direction * self.lift_speed)
 
-    def stop_lift(self):
+    def stop_lift(self, x):
         self.vector.motors.set_lift_motor(0)
