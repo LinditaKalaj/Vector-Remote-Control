@@ -51,6 +51,11 @@ class Window(ctk.CTk):
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
         self.speak_entry.bind("<Return>", lambda event: self.vector_speak())
+        self.speak_entry.bind("<FocusIn>", lambda event: self.unbind_movement_bindings())
+        self.speak_entry.bind("<FocusOut>", lambda event: self.set_movement_bindings())
+        self.set_movement_bindings()
+
+    def set_movement_bindings(self):
         self.bind("<KeyPress-w>", self.move_vector.key_pressed)
         self.bind("<KeyRelease-w>", self.move_vector.key_released)
         self.bind("<KeyPress-s>", self.move_vector.key_pressed)
@@ -67,6 +72,24 @@ class Window(ctk.CTk):
         self.bind("<KeyRelease-Right>", self.move_vector.stop_head)
         self.bind("<KeyPress-Left>", lambda event: self.move_vector.move_head(-1))
         self.bind("<KeyRelease-Left>", self.move_vector.stop_head)
+
+    def unbind_movement_bindings(self):
+        self.unbind("<KeyPress-w>")
+        self.unbind("<KeyRelease-w>")
+        self.unbind("<KeyPress-s>")
+        self.unbind("<KeyRelease-s>")
+        self.unbind("<KeyPress-a>")
+        self.unbind("<KeyRelease-a>")
+        self.unbind("<KeyPress-d>")
+        self.unbind("<KeyRelease-d>")
+        self.unbind("<KeyPress-Up>")
+        self.unbind("<KeyRelease-Up>")
+        self.unbind("<KeyPress-Down>")
+        self.unbind("<KeyRelease-Down>")
+        self.unbind("<KeyPress-Right>")
+        self.unbind("<KeyRelease-Right>")
+        self.unbind("<KeyPress-Left>")
+        self.unbind("<KeyRelease-Left>")
 
     # LOADS SO SLOW- LOOK AT IT LATER
     def start_camera(self):
