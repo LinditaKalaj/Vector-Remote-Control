@@ -1,6 +1,6 @@
+# -*- coding: UTF-8 -*-
 import asyncio
 import threading
-import time
 
 import customtkinter as ctk
 from tkinter import messagebox
@@ -8,18 +8,15 @@ import anki_vector
 from PIL import Image
 from anki_vector import util
 from anki_vector.exceptions import VectorConnectionException, VectorNotFoundException, VectorConfigurationException
-import multiprocessing as mp
-import sys
-
-from PIL import ImageTk
-
-from landing_gui import LandingWindow
 from move_vector import MoveVector
 
 
 class Window(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.loop = asyncio.get_event_loop()
+        self.greet_button = None
+        self.frustrated_button = None
         self.connection_status = None
         self.connect_button = None
         self.speak_entry = None
@@ -71,13 +68,6 @@ class Window(ctk.CTk):
         self.grid_rowconfigure(7, weight=1)
         self.grid_rowconfigure(8, weight=1)
         self.grid_rowconfigure(9, weight=1)
-        self.grid_rowconfigure(10, weight=1)
-        self.grid_rowconfigure(11, weight=1)
-        self.grid_rowconfigure(12, weight=1)
-        self.grid_rowconfigure(13, weight=1)
-        self.grid_rowconfigure(14, weight=1)
-        self.grid_rowconfigure(15, weight=1)
-        self.grid_rowconfigure(16, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
@@ -85,18 +75,22 @@ class Window(ctk.CTk):
         self.grid_columnconfigure(4, weight=1)
 
     def configure_items(self):
-        self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.connect_to_vector())
+        self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
         self.connect_button.grid(row=0, column=4, columnspan=1, padx=10,  sticky="e")
         self.connection_status = ctk.CTkLabel(self, text="Status: Disconnected")
         self.connection_status.grid(row=0, column=0, columnspan=1, sticky="nsew")
         self.video = ctk.CTkLabel(self, text="")
         photo_image = ctk.CTkImage(light_image=Image.open("./assets/blank_camera.png"), size=(453, 339))
         self.video.configure(image=photo_image)
-        self.video.grid(row=1, column=0, columnspan=5, rowspan=6, sticky="ew")
+        self.video.grid(row=1, column=0, columnspan=5, rowspan=5, sticky="ew")
+        self.greet_button = ctk.CTkButton(self, text="🤗", width= 2, command=lambda: self.vector.anim.play_animation_trigger('GreetAfterLongTime'))
+        self.greet_button.grid(row=7, column=1)
+        self.frustrated_button = ctk.CTkButton(self, text="🤗", width= 2, command=lambda: self.vector.anim.play_animation_trigger('GreetAfterLongTime'))
+        self.frustrated_button.grid(row=7, column=1)
         self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0, ctk.END))
-        self.clear_text.grid(row=13, column=4, columnspan=1)
+        self.clear_text.grid(row=7, column=4, columnspan=1)
         self.speak_entry = ctk.CTkEntry(self, placeholder_text="Enter what you want Vector to say here!")
-        self.speak_entry.grid(row=14, column=0, columnspan=5, rowspan=2, sticky="nsew")
+        self.speak_entry.grid(row=8, column=0, columnspan=5, rowspan=1, sticky="nsew")
 
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
@@ -159,11 +153,18 @@ class Window(ctk.CTk):
         self.move_vector.main_move()
         self.after(100, self.move)
 
-    def connect_to_vector(self):
+    def initialize_vector_connection(self):
+        self.connect_button.configure(state="disabled", command=None)
+        threading.Thread(target=self.async_thread).start()
+
+    async def connect_to_vector(self):
         args = util.parse_command_args()
         try:
             self.vector = anki_vector.AsyncRobot(args.serial)
             self.vector.connect()
+            anim_trigger_names = self.vector.anim.anim_trigger_list
+            for anim_trigger_name in anim_trigger_names:
+                print(anim_trigger_name)
         except VectorNotFoundException as v:
             print("1A connection error occurred: %s" % v)
         except VectorConnectionException as e:
@@ -180,3 +181,30 @@ class Window(ctk.CTk):
                 self.move_vector = MoveVector(self.vector)
                 self.set_binding()
                 self.move()
+                self.connection_status.configure(text="Status: Connected")
+
+    # Runs async thread
+    def async_thread(self):
+        self.loop.run_until_complete(self.send_to_vector())
+
+    # Creates an asyncio task and adds a callback function
+    async def send_to_vector(self):
+        task = asyncio.create_task(self.connect_to_vector())
+        task.add_done_callback(self.callback)
+        await task
+
+    # Allows user to press the generate button after task is complete
+    def callback(self, task):
+        if self.vector:
+            self.connect_button = ctk.CTkButton(self, state="normal", text="Disconnect", command=lambda: self.disconnect_vector())
+            self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
+        else:
+            self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
+            self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
+
+    def disconnect_vector(self):
+        self.connect_button.configure(state="disabled", command=None)
+        self.vector.disconnect()
+        self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
+        self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
+
