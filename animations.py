@@ -1,4 +1,5 @@
 from tkinter import ttk
+import tkinter as tk
 
 import customtkinter as ctk
 
@@ -6,6 +7,7 @@ import customtkinter as ctk
 class Animations(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
+        self.style = None
         self.greet = None
         self.frustrated = None
         self.owo_sad = None
@@ -60,8 +62,10 @@ class Animations(ctk.CTkFrame):
         self.sleepy = ctk.CTkButton(self, text="(ꈍ .̮ ꈍ)", width=10)
         self.hehe = ctk.CTkButton(self, text="(*´∀`*)", width=10)
         self.woa = ctk.CTkButton(self, text="(ʘᆽʘ)", width=10)
-        self.all = ttk.Combobox(self, values=["Loading..."])
-
+        combostyle = ttk.Style()
+        combostyle.theme_use("clam")
+        combostyle.configure('ARD.TCombobox', background="green", fieldbackground="lightgreen")
+        self.all = ttk.Combobox(self, values=["Loading..."], style='ARD.TCombobox')
         self.greet.grid(row=0, column=0)
         self.frustrated.grid(row=0, column=1)
         self.owo_sad.grid(row=0, column=2)
@@ -70,5 +74,6 @@ class Animations(ctk.CTkFrame):
         self.hehe.grid(row=0, column=5)
         self.woa.grid(row=0, column=6)
         self.all.grid(row=0, column=7, columnspan=2)
+
 
 
