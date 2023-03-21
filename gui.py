@@ -16,6 +16,7 @@ from move_vector import MoveVector
 class Window(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.start_video = False
         self.animations = None
         self.blank_photo_image = None
         self.animations_frame = None
@@ -95,8 +96,6 @@ class Window(ctk.CTk):
         self.speak_entry = ctk.CTkEntry(self, placeholder_text="Enter what you want Vector to say here!")
         self.speak_entry.grid(row=8, column=0, columnspan=5, rowspan=1, sticky="nsew", padx=10)
 
-
-
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
         self.speak_entry.bind("<Return>", lambda event: self.vector_speak())
@@ -142,10 +141,11 @@ class Window(ctk.CTk):
 
     # LOADS SO SLOW- LOOK AT IT LATER
     def start_camera(self):
-        image = self.vector.camera.latest_image.raw_image
-        photo_image = ctk.CTkImage(light_image=image, size=(453, 339))
-        self.video.configure(image=photo_image)
-        self.after(20, self.start_camera)
+        if self.start_video:
+            image = self.vector.camera.latest_image.raw_image
+            photo_image = ctk.CTkImage(light_image=image, size=(453, 339))
+            self.video.configure(image=photo_image)
+            self.after(20, self.start_camera)
 
     # Vectors speech
     def vector_speak(self):
@@ -174,13 +174,15 @@ class Window(ctk.CTk):
             print("1A connection error occurred: %s" % v)
         except VectorConnectionException as e:
             print("2A connection error occurred: %s" % e)
-            messagebox.showerror('Error!', "Connection error occurred: Please try reconnecting.")
+            messagebox.showwarning('Warning!', "Vector's animations have failed to load. Animations may not function "
+                                               "properly. Please try reconnecting Vector to resolve the issue.")
         except VectorConfigurationException as config_e:
             messagebox.showerror('Error!', "Could not find the sdk configuration file. Please run ezVector Setup "
                                            "prior to opening this program.")
             print("3A connection error occurred: %s" % config_e)
         finally:
             if self.vector:
+                self.start_video = True
                 self.vector.camera.init_camera_feed()
                 self.start_camera()
                 self.move_vector = MoveVector(self.vector)
@@ -188,7 +190,6 @@ class Window(ctk.CTk):
                 self.move()
                 self.connection_status.configure(text="Status: Connected")
                 self.animations.set_vector(self.vector)
-
 
     # Runs async thread
     def async_thread(self):
@@ -210,6 +211,8 @@ class Window(ctk.CTk):
             self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
 
     def disconnect_vector(self):
+        self.start_video = False
+        self.unbind_movement_bindings()
         self.connect_button.configure(state="disabled", command=None)
         self.video.configure(image=self.blank_photo_image)
         self.vector.disconnect()
