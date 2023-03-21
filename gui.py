@@ -8,12 +8,17 @@ import anki_vector
 from PIL import Image
 from anki_vector import util
 from anki_vector.exceptions import VectorConnectionException, VectorNotFoundException, VectorConfigurationException
+
+from animations import Animations
 from move_vector import MoveVector
 
 
 class Window(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.animations = None
+        self.blank_photo_image = None
+        self.animations_frame = None
         self.loop = asyncio.get_event_loop()
         self.greet_button = None
         self.frustrated_button = None
@@ -71,26 +76,26 @@ class Window(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
-        self.grid_columnconfigure(3, weight=1)
-        self.grid_columnconfigure(4, weight=1)
 
     def configure_items(self):
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
         self.connect_button.grid(row=0, column=4, columnspan=1, padx=10,  sticky="e")
         self.connection_status = ctk.CTkLabel(self, text="Status: Disconnected")
-        self.connection_status.grid(row=0, column=0, columnspan=1, sticky="nsew")
+        self.connection_status.grid(row=0, column=3, sticky="nsew")
         self.video = ctk.CTkLabel(self, text="")
-        photo_image = ctk.CTkImage(light_image=Image.open("./assets/blank_camera.png"), size=(453, 339))
-        self.video.configure(image=photo_image)
+        self.blank_photo_image = ctk.CTkImage(light_image=Image.open("./assets/blank_camera.png"), size=(453, 339))
+        self.video.configure(image=self.blank_photo_image)
         self.video.grid(row=1, column=0, columnspan=5, rowspan=5, sticky="ew")
-        self.greet_button = ctk.CTkButton(self, text="🤗", width= 2, command=lambda: self.vector.anim.play_animation_trigger('GreetAfterLongTime'))
-        self.greet_button.grid(row=7, column=1)
-        self.frustrated_button = ctk.CTkButton(self, text="🤗", width= 2, command=lambda: self.vector.anim.play_animation_trigger('GreetAfterLongTime'))
-        self.frustrated_button.grid(row=7, column=1)
+
+        self.animations = Animations(master=self)
+        self.animations.grid(row=7, column=0, columnspan=4, rowspan=1, padx=10, sticky="ew")
+
         self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0, ctk.END))
-        self.clear_text.grid(row=7, column=4, columnspan=1)
+        self.clear_text.grid(row=7, column=4, columnspan=1, sticky="se", pady=17, padx=10)
         self.speak_entry = ctk.CTkEntry(self, placeholder_text="Enter what you want Vector to say here!")
-        self.speak_entry.grid(row=8, column=0, columnspan=5, rowspan=1, sticky="nsew")
+        self.speak_entry.grid(row=8, column=0, columnspan=5, rowspan=1, sticky="nsew", padx=10)
+
+
 
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
@@ -182,6 +187,8 @@ class Window(ctk.CTk):
                 self.set_binding()
                 self.move()
                 self.connection_status.configure(text="Status: Connected")
+                self.animations.set_vector(self.vector)
+
 
     # Runs async thread
     def async_thread(self):
@@ -204,7 +211,9 @@ class Window(ctk.CTk):
 
     def disconnect_vector(self):
         self.connect_button.configure(state="disabled", command=None)
+        self.video.configure(image=self.blank_photo_image)
         self.vector.disconnect()
+        self.connection_status.configure(text="Status: Disconnected")
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
         self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
 
