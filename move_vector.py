@@ -47,3 +47,12 @@ class MoveVector:
 
     def stop_lift(self, x):
         self.vector.motors.set_lift_motor(0)
+
+    def set_head_speed(self, speed):
+        self.head_speed = speed
+
+    def set_lift_speed(self, speed):
+        self.lift_speed = speed
+
+    def set_wheel_speed(self, speed):
+        self.move_speed = speed
