@@ -15,6 +15,7 @@ from animations import Animations
 from chat_gpt import ChatGPT
 from move_vector import MoveVector
 from speed import Speed
+from statusbar import StatusBar
 from volume import Volume
 
 import anki_vector.events
@@ -23,6 +24,7 @@ import anki_vector.events
 class Window(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.vector_status = None
         self.speed = None
         self.volume = None
         self.start_video = False
@@ -86,6 +88,8 @@ class Window(ctk.CTk):
         self.grid_columnconfigure(4, weight=1)
 
     def configure_items(self):
+        self.vector_status = StatusBar(self)
+        self.vector_status.grid(row=0, column=0, columnspan=3, sticky="ew", padx=10)
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
         self.connect_button.grid(row=0, column=4, columnspan=1, padx=10,  sticky="e")
         self.connection_status = ctk.CTkLabel(self, text="Status: Disconnected")
@@ -210,6 +214,8 @@ class Window(ctk.CTk):
                 self.animations.set_vector(self.vector)
                 self.volume.set_vector(self.vector)
                 self.speed.set_move(self.move_vector)
+                self.vector_status.connect_vector(self.vector)
+                self.update_status()
 
     # Runs async thread
     def async_thread(self):
@@ -237,8 +243,13 @@ class Window(ctk.CTk):
         self.unbind_movement_bindings()
         self.connect_button.configure(state="disabled", command=None)
         self.video.configure(image=self.blank_photo_image)
+        self.vector_status.disconnect_vector()
         self.vector.disconnect()
         self.connection_status.configure(text="Status: Disconnected")
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
         self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
+
+    def update_status(self):
+        self.vector_status.tracking_status()
+        self.after(100, self.update_status)
 

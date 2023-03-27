@@ -13,7 +13,7 @@ class StatusBar(ctk.CTkFrame):
     def connect_vector(self, robot):
         self.vector = robot
 
-    def start_tracking_status(self):
+    def tracking_status(self):
         print(self.vector.status.are_motors_moving)
         if self.vector.status.is_animating:
             print("Vector is animating.")
