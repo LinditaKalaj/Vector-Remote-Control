@@ -3,7 +3,7 @@ import asyncio
 import threading
 
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, Menu
 import anki_vector
 from PIL import Image
 from anki_vector import util
@@ -13,6 +13,7 @@ from anki_vector.events import Events
 
 from animations import Animations
 from chat_gpt import ChatGPT
+from gpt_button import GPTButton
 from move_vector import MoveVector
 from speed import Speed
 from statusbar import StatusBar
@@ -81,6 +82,8 @@ class Window(ctk.CTk):
         self.grid_rowconfigure(3, weight=1)
         self.grid_rowconfigure(4, weight=1)
         self.grid_rowconfigure(5, weight=1)
+        self.grid_rowconfigure(6, weight=1)
+        self.grid_rowconfigure(7, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=1)
@@ -89,28 +92,34 @@ class Window(ctk.CTk):
 
     def configure_items(self):
         self.vector_status = StatusBar(self)
-        self.vector_status.grid(row=0, column=0, columnspan=3, sticky="ew", padx=10)
+        self.vector_status.grid(row=1, column=0, columnspan=3, sticky="ew", padx=10)
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
-        self.connect_button.grid(row=0, column=4, columnspan=1, padx=10,  sticky="e")
+        self.connect_button.grid(row=1, column=4, columnspan=1, padx=10,  sticky="e")
         self.connection_status = ctk.CTkLabel(self, text="Status: Disconnected")
-        self.connection_status.grid(row=0, column=3, sticky="e")
+        self.connection_status.grid(row=1, column=3, sticky="e")
         self.volume = Volume(self)
-        self.volume.grid(row=1, column=0, columnspan=3, sticky="sew", padx=(30, 0))
+        self.volume.grid(row=2, column=0, columnspan=3, sticky="sew", padx=(30, 0))
         self.speed = Speed(self)
-        self.speed.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=(10, 0), padx=(30, 0))
+        self.speed.grid(row=3, column=0, columnspan=3, sticky="nsew", pady=(10, 0), padx=(30, 0))
 
         self.video = ctk.CTkLabel(self, text="")
         self.blank_photo_image = ctk.CTkImage(light_image=Image.open("./assets/blank_camera.png"), size=(453, 339))
         self.video.configure(image=self.blank_photo_image)
-        self.video.grid(row=1, column=3, columnspan=3, rowspan=3, sticky=" ew")
+        self.video.grid(row=2, column=3, columnspan=3, rowspan=3, sticky=" ew")
 
         self.animations = Animations(master=self)
-        self.animations.grid(row=4, column=0, columnspan=4, padx=(20, 0), sticky="sew")
+        self.animations.grid(row=5, column=0, columnspan=4, padx=(20, 0), sticky="sew")
 
-        self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0, ctk.END))
-        self.clear_text.grid(row=4, column=4, columnspan=1, sticky="se", pady=0, padx=(0, 10))
-        self.speak_entry = ctk.CTkEntry(self, placeholder_text="Enter what you want Vector to say here!")
-        self.speak_entry.grid(row=5, column=0, columnspan=5, rowspan=1, sticky="nsew", padx=10, pady=(10, 10))
+        self.say_text_button = ctk.CTkButton(self, text="Say text", command=self.vector_speak)
+        self.say_text_button.grid(row=6, column=4, sticky="nsew", padx=10, pady=10)
+
+        self.gpt_button = GPTButton(self, text="GPT Button")
+        self.gpt_button.grid(row=7, column=4, sticky="nsew", padx=10, pady=10)
+
+        self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0.0, ctk.END))
+        self.clear_text.grid(row=5, column=4, columnspan=1, sticky="se", pady=0, padx=(0, 20))
+        self.speak_entry = ctk.CTkTextbox(self, height=100)
+        self.speak_entry.grid(row=6, column=0, columnspan=4, rowspan=2, sticky="nsew", padx=10, pady=(10, 10))
 
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
@@ -165,7 +174,7 @@ class Window(ctk.CTk):
 
     # Vectors speech
     def vector_speak(self):
-        to_say = self.speak_entry.get()
+        to_say = self.speak_entry.get(0.00, ctk.END)
         if to_say == "":
             return
         self.vector.behavior.say_text(to_say)
@@ -173,6 +182,10 @@ class Window(ctk.CTk):
     def move(self):
         self.move_vector.main_move()
         self.after(100, self.move)
+
+    def update_status(self):
+        self.vector_status.tracking_status()
+        self.after(100, self.update_status)
 
     def initialize_vector_connection(self):
         self.connect_button.configure(state="disabled", command=None)
@@ -231,10 +244,10 @@ class Window(ctk.CTk):
     def callback(self, task):
         if self.vector:
             self.connect_button = ctk.CTkButton(self, state="normal", text="Disconnect", command=lambda: self.disconnect_vector())
-            self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
+            self.connect_button.grid(row=1, column=4, columnspan=1, padx=10, sticky="e")
         else:
             self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
-            self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
+            self.connect_button.grid(row=1, column=4, columnspan=1, padx=10, sticky="e")
 
     def disconnect_vector(self):
         if not self.vector:
@@ -243,13 +256,8 @@ class Window(ctk.CTk):
         self.unbind_movement_bindings()
         self.connect_button.configure(state="disabled", command=None)
         self.video.configure(image=self.blank_photo_image)
-        self.vector_status.disconnect_vector()
         self.vector.disconnect()
         self.connection_status.configure(text="Status: Disconnected")
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
-        self.connect_button.grid(row=0, column=4, columnspan=1, padx=10, sticky="e")
-
-    def update_status(self):
-        self.vector_status.tracking_status()
-        self.after(100, self.update_status)
+        self.connect_button.grid(row=1, column=4, columnspan=1, padx=10, sticky="e")
 
