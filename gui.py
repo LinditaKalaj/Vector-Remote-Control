@@ -113,7 +113,7 @@ class Window(ctk.CTk):
         self.say_text_button = ctk.CTkButton(self, text="Say text", command=self.vector_speak)
         self.say_text_button.grid(row=6, column=4, sticky="nsew", padx=10, pady=10)
 
-        self.gpt_button = GPTButton(self, text="GPT Button", command=self.send_entry_to_gpt)
+        self.gpt_button = GPTButton(self, text="GPT Button", command=self.send_entry_to_gpt, state='normal')
         self.gpt_button.grid(row=7, column=4, sticky="nsew", padx=10, pady=10)
 
         self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0.0, ctk.END))
@@ -228,6 +228,7 @@ class Window(ctk.CTk):
                 self.volume.set_vector(self.vector)
                 self.speed.set_move(self.move_vector)
                 self.vector_status.connect_vector(self.vector)
+                self.gpt_button.set_vector(self.vector, self.speak_entry)
                 self.update_status()
 
     # Runs async thread
@@ -262,8 +263,6 @@ class Window(ctk.CTk):
         self.connect_button.grid(row=1, column=4, columnspan=1, padx=10, sticky="e")
 
     def send_entry_to_gpt(self):
-        to_say = self.speak_entry.get(0.00, ctk.END)
-        self.gpt_button.get_gpt_for_vector_speech(to_say)
-        self.vector.behavior.say_text(self.gpt_button.get_gpt_for_vector_speech(to_say))
+        self.gpt_button.get_gpt_for_vector_speech()
 
 
