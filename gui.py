@@ -25,6 +25,8 @@ import anki_vector.events
 class Window(ctk.CTk):
     def __init__(self):
         super().__init__()
+        self.gpt_button = None
+        self.say_text_button = None
         self.vector_status = None
         self.speed = None
         self.volume = None
@@ -45,16 +47,6 @@ class Window(ctk.CTk):
         self.configure_style()
         self.configure_grid()
         self.configure_items()
-        # self.video = ctk.CTkLabel(self, text="")
-        # self.video.pack(fill=ctk.BOTH, expand=True)
-        # self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0, ctk.END))
-        # self.speak_entry = ctk.CTkEntry(self, placeholder_text="Enter what you want Vector to say here!")
-        # self.clear_text.pack(fill=ctk.BOTH, expand=True)
-        # self.speak_entry.pack(fill=ctk.BOTH, expand=True)
-        # self.vector.camera.init_camera_feed()
-        # self.start_camera()
-        # self.set_binding()
-        # self.move()
 
     def configure_style(self):
         self.configure(background='#303030')
@@ -93,12 +85,16 @@ class Window(ctk.CTk):
     def configure_items(self):
         self.vector_status = StatusBar(self)
         self.vector_status.grid(row=1, column=0, columnspan=3, sticky="ew", padx=10)
+
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
         self.connect_button.grid(row=1, column=4, columnspan=1, padx=10,  sticky="e")
+
         self.connection_status = ctk.CTkLabel(self, text="Status: Disconnected")
         self.connection_status.grid(row=1, column=3, sticky="e")
+
         self.volume = Volume(self)
         self.volume.grid(row=2, column=0, columnspan=3, sticky="sew", padx=(30, 0))
+
         self.speed = Speed(self)
         self.speed.grid(row=3, column=0, columnspan=3, sticky="nsew", pady=(10, 0), padx=(30, 0))
 
@@ -110,16 +106,17 @@ class Window(ctk.CTk):
         self.animations = Animations(master=self)
         self.animations.grid(row=5, column=0, columnspan=4, padx=(20, 0), sticky="sew")
 
+        self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0.0, ctk.END))
+        self.clear_text.grid(row=5, column=4, columnspan=1, sticky="se", pady=0, padx=(0, 20))
+
+        self.speak_entry = ctk.CTkTextbox(self, height=100, state="disabled")
+        self.speak_entry.grid(row=6, column=0, columnspan=4, rowspan=2, sticky="nsew", padx=10, pady=(10, 10))
+
         self.say_text_button = ctk.CTkButton(self, text="Say text", command=self.vector_speak)
         self.say_text_button.grid(row=6, column=4, sticky="nsew", padx=10, pady=10)
 
         self.gpt_button = GPTButton(self, text="GPT Button", command=self.send_entry_to_gpt, state='normal')
         self.gpt_button.grid(row=7, column=4, sticky="nsew", padx=10, pady=10)
-
-        self.clear_text = ctk.CTkButton(self, text="Clear text", command=lambda: self.speak_entry.delete(0.0, ctk.END))
-        self.clear_text.grid(row=5, column=4, columnspan=1, sticky="se", pady=0, padx=(0, 20))
-        self.speak_entry = ctk.CTkTextbox(self, height=100)
-        self.speak_entry.grid(row=6, column=0, columnspan=4, rowspan=2, sticky="nsew", padx=10, pady=(10, 10))
 
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
@@ -176,8 +173,10 @@ class Window(ctk.CTk):
     def vector_speak(self):
         to_say = self.speak_entry.get(0.00, ctk.END)
         if to_say == "":
-            return
+            return 'break'
         self.vector.behavior.say_text(to_say)
+        self.speak_entry.delete(0.0, ctk.END)
+        return 'break'
 
     def move(self):
         self.move_vector.main_move()
@@ -230,6 +229,7 @@ class Window(ctk.CTk):
                 self.vector_status.connect_vector(self.vector)
                 self.gpt_button.set_vector(self.vector, self.speak_entry)
                 self.update_status()
+                self.speak_entry.configure(state="normal")
 
     # Runs async thread
     def async_thread(self):
@@ -264,5 +264,6 @@ class Window(ctk.CTk):
 
     def send_entry_to_gpt(self):
         self.gpt_button.get_gpt_for_vector_speech()
+        self.speak_entry.delete(0.0, ctk.END)
 
 
