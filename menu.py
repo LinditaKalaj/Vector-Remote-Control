@@ -2,12 +2,15 @@ import sys
 import tkinter as tk
 import customtkinter as ctk
 
+from control_info_window import ControlInfoWindow
+
 
 class MenuBar(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.init_file_menu()
         self.init_help_menu()
+        self.control_info_window = None
 
     def init_file_menu(self):
         file = tk.Menubutton(self, text='File', background='gray17', foreground='gray81', activeforeground='gray98',
@@ -27,13 +30,13 @@ class MenuBar(ctk.CTkFrame):
                                     activeforeground='gray98', activebackground='#2CC985')
         help_menu = tk.Menu(help_button, tearoff=0)
         help_menu.add_command(label='Controls', background='gray17', foreground='gray81', activeforeground='gray98',
-                              activebackground='#2CC985')
+                              activebackground='#2CC985', command=self.open_vector_control_info_window)
         help_button.config(menu=help_menu)
         help_button.pack(side='left', pady=1)
 
     def open_gpt_api_dialog(self):
-        width=300
-        height=150
+        width = 300
+        height = 150
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         x = (screen_width / 2) - (width / 2)
@@ -47,3 +50,9 @@ class MenuBar(ctk.CTkFrame):
         with open(".env", "w") as f:
             new_api = 'OPENAI_API_KEY=' + dialog_input
             f.write(new_api)
+
+    def open_vector_control_info_window(self):
+        if self.control_info_window is None or not self.control_info_window.winfo_exists():
+            self.control_info_window = ControlInfoWindow(self)
+        self.control_info_window .attributes('-topmost', 'true')
+        self.control_info_window.focus()
