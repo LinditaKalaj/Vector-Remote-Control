@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 import customtkinter as ctk
 
@@ -14,10 +15,10 @@ class MenuBar(ctk.CTkFrame):
         file_menu = tk.Menu(file, tearoff=0, borderwidth=0)
         file_menu.config(borderwidth=0, activeborderwidth=0, bd=0)
         file_menu.add_command(label='GPT API Key', background='gray17', foreground='gray81', activeforeground='gray98',
-                              activebackground='#2CC985', command= self.open_gpt_api_dialog)
+                              activebackground='#2CC985', command=self.open_gpt_api_dialog)
         file_menu.add_separator(background='gray17')
         file_menu.add_command(label='Quit', background='gray17', foreground='gray81', activeforeground='gray98',
-                              activebackground='#2CC985')
+                              activebackground='#2CC985', command=sys.exit)
         file.config(menu=file_menu, borderwidth=0)
         file.pack(side='left', pady=1)
 
