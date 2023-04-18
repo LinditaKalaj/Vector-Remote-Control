@@ -1,87 +1,52 @@
-# -*- coding: UTF-8 -*-
 import asyncio
 import threading
-
 import customtkinter as ctk
-from tkinter import messagebox, Menu
+from tkinter import messagebox
 import anki_vector
 from PIL import Image
 from anki_vector import util
 from anki_vector.exceptions import VectorConnectionException, VectorNotFoundException, VectorConfigurationException, \
     VectorControlTimeoutException
-from anki_vector.events import Events
-
 from animations import Animations
-from chat_gpt import ChatGPT
 from gpt_button import GPTButton
 from move_vector import MoveVector
 from speed import Speed
 from statusbar import StatusBar
 from volume import Volume
-
 import anki_vector.events
+from window_utils import Utils
 
 
 class Window(ctk.CTk):
     def __init__(self):
         super().__init__()
+        ctk.set_default_color_theme("green")
+        self.vector = None # Connection to Vectors SDK
+        self.win_utils = Utils(self)  # Window styling utils
+        self.win_utils.configure_style("Vector Remote", 900, 700)
+        self.win_utils.configure_grid(7, 4)
+        self.move_vector = None  # Class used for Vectors movements
         self.gpt_button = None
         self.say_text_button = None
-        self.vector_status = None
-        self.speed = None
-        self.volume = None
+        self.vector_status = None  # Frame class containing Vectors status
+        self.speed = None  # Frame class containing Vectors speed controls
+        self.volume = None  # Frame class containing Vectors Volume controls
         self.start_video = False
-        self.animations = None
+        self.animations = None  # Frame class containing Vectors Animation controls
         self.blank_photo_image = None
-        self.animations_frame = None
-        self.loop = asyncio.get_event_loop()
         self.greet_button = None
-        self.frustrated_button = None
         self.connection_status = None
         self.connect_button = None
         self.speak_entry = None
         self.clear_text = None
         self.video = None
-        self.vector = None
-        self.move_vector = None
-        self.configure_style()
-        self.configure_grid()
+        self.loop = asyncio.get_event_loop()  # Async loop to allow free movement of gui while vector connects
         self.configure_items()
 
-    def configure_style(self):
-        self.configure(background='#303030')
-        self.title("Vector Remote")
-        ctk.set_default_color_theme("green")
-
-        # Set min and max sizes
-        height = 700
-        width = 900
-        self.minsize(900, 700)
-        self.maxsize(900, 700)
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x = (screen_width / 2) - (width / 2)
-        y = (screen_height / 2) - (height / 2)
-
-        # Centers window based on users monitor
-        self.geometry('%dx%d+%d+%d' % (width, height, x, y))
-
-    def configure_grid(self):
-        # Configures row and col weights
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_rowconfigure(3, weight=1)
-        self.grid_rowconfigure(4, weight=1)
-        self.grid_rowconfigure(5, weight=1)
-        self.grid_rowconfigure(6, weight=1)
-        self.grid_rowconfigure(7, weight=1)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure(2, weight=1)
-        self.grid_columnconfigure(3, weight=1)
-        self.grid_columnconfigure(4, weight=1)
-
+    """
+    Inits Classes and buttons and places them on a grid
+    :returns None
+    """
     def configure_items(self):
         self.vector_status = StatusBar(self)
         self.vector_status.grid(row=1, column=0, columnspan=3, sticky="ew", padx=10)
@@ -118,6 +83,13 @@ class Window(ctk.CTk):
         self.gpt_button = GPTButton(self, text="GPT Button", command=self.send_entry_to_gpt, state='normal')
         self.gpt_button.grid(row=7, column=4, sticky="nsew", padx=10, pady=10)
 
+    """
+    Sets button bindings: 
+    Video binding was used to focus out of entry box.
+    Return binding used when text in entry box needs to be sent to Vectors speech.
+    Focus in and out events used to disable Vectors movements when typing.
+    :returns None
+    """
     def set_binding(self):
         self.video.bind("<Button-1>", lambda event: self.video.focus())
         self.speak_entry.bind("<Return>", lambda event: self.vector_speak())
@@ -125,6 +97,10 @@ class Window(ctk.CTk):
         self.speak_entry.bind("<FocusOut>", lambda event: self.set_movement_bindings())
         self.set_movement_bindings()
 
+    """
+    Sets directional bindings using wsad and binds them to functions in move_vector class
+    :returns None
+    """
     def set_movement_bindings(self):
         self.bind("<KeyPress-w>", self.move_vector.key_pressed)
         self.bind("<KeyRelease-w>", self.move_vector.key_released)
@@ -143,6 +119,10 @@ class Window(ctk.CTk):
         self.bind("<KeyPress-Left>", lambda event: self.move_vector.move_head(-1))
         self.bind("<KeyRelease-Left>", self.move_vector.stop_head)
 
+    """
+    Unbinds movement when focused in entry box, called from the focusin entry binding event
+    :returns None
+    """
     def unbind_movement_bindings(self):
         self.unbind("<KeyPress-w>")
         self.unbind("<KeyRelease-w>")
@@ -161,7 +141,11 @@ class Window(ctk.CTk):
         self.unbind("<KeyPress-Left>")
         self.unbind("<KeyRelease-Left>")
 
-    # LOADS SO SLOW- LOOK AT IT LATER
+    """
+    Grabs picture feed from Vector and updates self.video. 
+    Then registers a callback function on its self for continuous video feed.
+    :returns: None
+    """
     def start_camera(self):
         if self.start_video:
             image = self.vector.camera.latest_image.raw_image
@@ -169,7 +153,13 @@ class Window(ctk.CTk):
             self.video.configure(image=photo_image)
             self.after(20, self.start_camera)
 
-    # Vectors speech
+    """
+    Grabs picture feed from Vector and updates self.video. 
+    Then registers a callback function on its self for continuous video feed.
+    :param: None
+    :returns: 'break' so there is no new line created by enter
+    :rtype: string
+    """
     def vector_speak(self):
         to_say = self.speak_entry.get(0.00, ctk.END)
         if to_say == "":
@@ -178,31 +168,51 @@ class Window(ctk.CTk):
         self.speak_entry.delete(0.0, ctk.END)
         return 'break'
 
+    """
+    Registers a callback function to run main_move function from vectors move class
+    :returns: None
+    """
     def move(self):
         self.move_vector.main_move()
         self.after(100, self.move)
 
+    """
+    Registers a callback function to continuously get vectors tracking status
+    :returns: None
+    """
     def update_status(self):
         self.vector_status.tracking_status()
         self.after(100, self.update_status)
 
+    """
+    Starts a thread to connect to Vector asynchronously
+    :returns: None
+    """
     def initialize_vector_connection(self):
         self.connect_button.configure(state="disabled", command=None)
-        threading.Thread(target=self.async_thread).start()
+        threading.Thread(target=self.loop.run_until_complete(self.send_to_vector())).start()
 
+    async def send_to_vector(self):
+        task = asyncio.create_task(self.connect_to_vector())
+        task.add_done_callback(self.callback)
+        await task
+
+    """
+    Async function to connect to vector. If an error occurs, an error message will be displayed to the user. 
+    If no errors occurred then vector will initialize along with his camera feed and functionality.
+    :returns: None
+    """
     async def connect_to_vector(self):
         args = util.parse_command_args()
         try:
-            self.vector = anki_vector.AsyncRobot(args.serial, behavior_activation_timeout=30.0, cache_animation_lists=False)
+            self.vector = anki_vector.AsyncRobot(args.serial,
+                                                 behavior_activation_timeout=30.0,
+                                                 cache_animation_lists=False)
             self.vector.connect()
 
-            anim_trigger_names = self.vector.anim.anim_trigger_list
-            for anim_trigger_name in anim_trigger_names:
-                print(anim_trigger_name)
         except VectorNotFoundException as v:
-            print("1A connection error occurred: %s" % v)
+            messagebox.showerror('Error!', "Unknown error has occurred.")
         except VectorConnectionException as e:
-            print("2A connection error occurred: %s" % e)
             messagebox.showwarning('Warning!', "Vector's animations have failed to load. Animations may not function "
                                                "properly. Please try reconnecting Vector to resolve the issue.")
         except VectorConfigurationException as config_e:
@@ -210,7 +220,6 @@ class Window(ctk.CTk):
                                            "prior to opening this program.")
             print("3A connection error occurred: %s" % config_e)
         except VectorControlTimeoutException as e:
-            print("2A connection error occurred: %s" % e)
             messagebox.showerror('Error!', "Failed to get control of Vector. Please verify that Vector is connected "
                                            "to the internet, is on a flat surface, and is fully charged.")
 
@@ -231,25 +240,26 @@ class Window(ctk.CTk):
                 self.update_status()
                 self.speak_entry.configure(state="normal")
 
-    # Runs async thread
-    def async_thread(self):
-        self.loop.run_until_complete(self.send_to_vector())
-
-    # Creates an asyncio task and adds a callback function
-    async def send_to_vector(self):
-        task = asyncio.create_task(self.connect_to_vector())
-        task.add_done_callback(self.callback)
-        await task
-
-    # Allows user to press the generate button after task is complete
+    """
+    Replaces the connect button with a disconnect if Vector is properly connected.
+    Else, the button changes states from disabled to normal.
+    :returns: None
+    """
     def callback(self, task):
         if self.vector:
-            self.connect_button = ctk.CTkButton(self, state="normal", text="Disconnect", command=lambda: self.disconnect_vector())
+            self.connect_button = ctk.CTkButton(self, state="normal", text="Disconnect",
+                                                command=lambda: self.disconnect_vector())
             self.connect_button.grid(row=1, column=4, columnspan=1, padx=10, sticky="e")
         else:
-            self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
+            self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.
+                                                initialize_vector_connection())
             self.connect_button.grid(row=1, column=4, columnspan=1, padx=10, sticky="e")
 
+    """
+    When the disconnect button is pressed, the video callback function stops and all movement will unbind. 
+    The connect button will reappear to grant the user an opportunity to connect again.
+    :returns: None
+    """
     def disconnect_vector(self):
         if not self.vector:
             return
@@ -262,8 +272,13 @@ class Window(ctk.CTk):
         self.connect_button = ctk.CTkButton(self, text="Connect", command=lambda: self.initialize_vector_connection())
         self.connect_button.grid(row=1, column=4, columnspan=1, padx=10, sticky="e")
 
+    """
+    Calls gpt button function to send user input to gpt class to process the question and make vector say the response.
+    :returns: None
+    """
     def send_entry_to_gpt(self):
-        self.gpt_button.get_gpt_for_vector_speech()
+        self.gpt_button.get_gpt_for_vector_speech(self.speak_entry.get(0.0, ctk.END))
         self.speak_entry.delete(0.0, ctk.END)
+
 
 
