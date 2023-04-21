@@ -1,11 +1,30 @@
 import sys
 import tkinter as tk
 import customtkinter as ctk
-
 from control_info_window import ControlInfoWindow
 
 
 class MenuBar(ctk.CTkFrame):
+    """
+    Custom tkinker frame acting like a menu bar
+
+    Attributes
+    ----------
+
+    self.control_info_window: object
+        window displaying control info for vector
+
+    Methods
+    -------
+    init_file_menu(self)
+        Creates the file menu and its subsequent buttons.
+    init_help_menu(self)
+        Creates the help menu and its subsequent buttons.
+    open_gpt_api_dialog(self)
+        opens a window so the user can enter their gpt api key
+    open_vector_control_info_window(self)
+        opens the control information window
+    """
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.init_file_menu()
