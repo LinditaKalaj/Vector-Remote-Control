@@ -1,6 +1,8 @@
 import customtkinter as ctk
 from PIL import Image
 
+from window_utils import Utils
+
 
 class ControlInfoWindow(ctk.CTkToplevel):
     def __init__(self, *args, **kwargs):
@@ -13,11 +15,11 @@ class ControlInfoWindow(ctk.CTkToplevel):
         self.wsad_info_frame = None
         self.arrow_img = None
         self.wsad_img = None
-        self.configure_style()
+        self.win_utils = Utils(self)
+        self.win_utils.configure_style("Vector's Control Info", 450, 300)
         self.get_keyboard_button_imgs()
         self.init_items()
         self.add_items_to_grid()
-
 
     def get_keyboard_button_imgs(self):
         self.wsad_img = ctk.CTkImage(light_image=Image.open("./assets/wsad_transparent.png"), size=(224, 148))
@@ -44,21 +46,4 @@ class ControlInfoWindow(ctk.CTkToplevel):
         self.arrow_img_holder.grid(row=1, column=0)
         self.wsad_info_frame.grid(row=0, column=1, padx=10, pady=10)
         self.arrow_info_frame.grid(row=1, column=1, padx=10, pady=10)
-    
-    def configure_style(self):
-        self.configure(background='#303030')
-        self.title("Vector's Control Info")
-        ctk.set_default_color_theme("green")
 
-        # Set min and max sizes
-        height = 300
-        width = 450
-        self.minsize(450, 300)
-        self.maxsize(450, 300)
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x = (screen_width / 2) - (width / 2)
-        y = (screen_height / 2) - (height / 2)
-
-        # Centers window based on users monitor
-        self.geometry('%dx%d+%d+%d' % (width, height, x, y))
