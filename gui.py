@@ -21,7 +21,7 @@ class Window(ctk.CTk):
     def __init__(self):
         super().__init__()
         ctk.set_default_color_theme("green")
-        self.vector = None # Connection to Vectors SDK
+        self.vector = None  # Connection to Vectors SDK
         self.win_utils = Utils(self)  # Window styling utils
         self.win_utils.configure_style("Vector Remote", 900, 700)
         self.win_utils.configure_grid(7, 4)
@@ -210,16 +210,15 @@ class Window(ctk.CTk):
                                                  cache_animation_lists=False)
             self.vector.connect()
 
-        except VectorNotFoundException as v:
+        except VectorNotFoundException:
             messagebox.showerror('Error!', "Unknown error has occurred.")
-        except VectorConnectionException as e:
+        except VectorConnectionException:
             messagebox.showwarning('Warning!', "Vector's animations have failed to load. Animations may not function "
                                                "properly. Please try reconnecting Vector to resolve the issue.")
-        except VectorConfigurationException as config_e:
+        except VectorConfigurationException:
             messagebox.showerror('Error!', "Could not find the sdk configuration file. Please run ezVector Setup "
                                            "prior to opening this program.")
-            print("3A connection error occurred: %s" % config_e)
-        except VectorControlTimeoutException as e:
+        except VectorControlTimeoutException:
             messagebox.showerror('Error!', "Failed to get control of Vector. Please verify that Vector is connected "
                                            "to the internet, is on a flat surface, and is fully charged.")
 
@@ -279,6 +278,3 @@ class Window(ctk.CTk):
     def send_entry_to_gpt(self):
         self.gpt_button.get_gpt_for_vector_speech(self.speak_entry.get(0.0, ctk.END))
         self.speak_entry.delete(0.0, ctk.END)
-
-
-
