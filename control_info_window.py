@@ -5,6 +5,40 @@ from window_utils import Utils
 
 
 class ControlInfoWindow(ctk.CTkToplevel):
+    """
+    Class used to display a window with control information for vector.
+
+    Attributes
+    ----------
+
+    self.arrow_img_holder: object
+        ctk label used to show an image of keyboard arrows
+    self.wsad_img_holder: object
+        ctk label used to show an image of the "wsad" keys
+    self.arrow_info_txt: object
+        Text information about vectors movements using the arrow keys
+    self.wsad_info_txt: object
+        Text information about vectors movements using the "wsad" keys
+    self.arrow_info_frame: object
+        Frame that wraps around the text information for the arrow keys
+    self.wsad_info_frame: object
+        Frame that wraps around the text information for the "wsad" keys
+    self.arrow_img: object
+        image of the keyboard arrows
+    self.wsad_img: object
+        image of the wsad keys
+    self.win_utils: object
+        class that configures the window style
+
+    Methods
+    -------
+    get_keyboard_button_imgs(self)
+        gets local images (the arrow keys and wsad key images.
+    init_items(self)
+        loads the image into the label with text information wrapped in a frame
+    add_items_to_grid(self)
+        adds the label with the image and text information to the window
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.arrow_img_holder = None
@@ -46,4 +80,3 @@ class ControlInfoWindow(ctk.CTkToplevel):
         self.arrow_img_holder.grid(row=1, column=0)
         self.wsad_info_frame.grid(row=0, column=1, padx=10, pady=10)
         self.arrow_info_frame.grid(row=1, column=1, padx=10, pady=10)
-
